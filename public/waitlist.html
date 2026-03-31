@@ -1,0 +1,307 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Skill Editor — Waitlist</title>
+    <meta name="description" content="Join the Skill Editor waitlist. Be the first to know about new features and updates." />
+    <meta name="theme-color" content="#0f172a" />
+    <link rel="icon" type="image/svg+xml" href="/assets/favicon-dark-BcSslWkW.svg" />
+
+    <!-- Open Graph -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://skilleditor.com/waitlist" />
+    <meta property="og:title" content="Skill Editor — Waitlist" />
+    <meta property="og:description" content="Join the Skill Editor waitlist. Be the first to know about new features and updates." />
+    <meta property="og:image" content="https://skilleditor.com/og-image.png" />
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+
+    <style>
+      :root {
+        --color-bg-primary: #1a1a1a;
+        --color-bg-sidebar: #141414;
+        --color-bg-surface: #242424;
+        --color-bg-hover: #2a2a2a;
+        --color-bg-active: #333333;
+        --color-border: #333333;
+        --color-border-subtle: #2a2a2a;
+        --color-text-primary: #e5e5e5;
+        --color-text-secondary: #999999;
+        --color-text-muted: #666666;
+        --color-accent: #D97757;
+        --color-accent-hover: #E08A6D;
+        --color-accent-subtle: rgba(217, 119, 87, 0.15);
+        --color-danger: #ef4444;
+        --font-sans: "Inter", system-ui, sans-serif;
+        --font-mono: "JetBrains Mono", monospace;
+      }
+
+      * { box-sizing: border-box; margin: 0; padding: 0; }
+
+      html, body {
+        height: 100%;
+        background: var(--color-bg-primary);
+        color: var(--color-text-primary);
+        font-family: var(--font-sans);
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+      }
+
+      body {
+        display: flex;
+        flex-direction: column;
+        min-height: 100vh;
+      }
+
+      .page-content {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 2rem;
+      }
+
+      .container {
+        max-width: 28rem;
+        width: 100%;
+      }
+
+      /* Header */
+      .header {
+        text-align: center;
+        margin-bottom: 2.5rem;
+      }
+
+      .logo-group {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.75rem;
+        margin-bottom: 1rem;
+      }
+
+      .logo-box {
+        width: 2.5rem;
+        height: 2.5rem;
+        border-radius: 0.5rem;
+        background: var(--color-accent-subtle);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .logo-box svg {
+        width: 1.25rem;
+        height: 1.25rem;
+      }
+
+      h1 {
+        font-size: 1.5rem;
+        font-weight: 600;
+        letter-spacing: -0.025em;
+      }
+
+      .subtitle {
+        color: var(--color-text-secondary);
+        font-size: 0.875rem;
+        line-height: 1.5;
+        margin-top: 0.5rem;
+      }
+
+      /* Form card */
+      .form-card {
+        background: var(--color-bg-surface);
+        border: 1px solid var(--color-border);
+        border-radius: 0.75rem;
+        padding: 1.5rem;
+      }
+
+      .form-card p {
+        color: var(--color-text-secondary);
+        font-size: 0.875rem;
+        line-height: 1.6;
+        margin-bottom: 1.25rem;
+      }
+
+      .input-row {
+        display: flex;
+        gap: 0.5rem;
+      }
+
+      .input-row input {
+        flex: 1;
+        background: var(--color-bg-primary);
+        border: 1px solid var(--color-border);
+        border-radius: 0.5rem;
+        padding: 0.625rem 0.75rem;
+        font-size: 0.875rem;
+        font-family: var(--font-sans);
+        color: var(--color-text-primary);
+        outline: none;
+        transition: border-color 0.2s;
+      }
+
+      .input-row input::placeholder {
+        color: var(--color-text-muted);
+      }
+
+      .input-row input:focus {
+        border-color: var(--color-accent);
+      }
+
+      .input-row button {
+        background: var(--color-accent);
+        color: #fff;
+        border: none;
+        border-radius: 0.5rem;
+        padding: 0.625rem 1.25rem;
+        font-size: 0.875rem;
+        font-weight: 500;
+        font-family: var(--font-sans);
+        cursor: pointer;
+        transition: background 0.2s;
+        white-space: nowrap;
+      }
+
+      .input-row button:hover {
+        background: var(--color-accent-hover);
+      }
+
+      /* Success state */
+      .success-msg {
+        display: none;
+        text-align: center;
+        padding: 0.75rem 0;
+        color: var(--color-accent);
+        font-size: 0.875rem;
+        font-weight: 500;
+      }
+
+      .success-msg.visible {
+        display: block;
+      }
+
+      .form-card.submitted .input-row,
+      .form-card.submitted p {
+        display: none;
+      }
+
+      .form-card.submitted .success-msg {
+        display: block;
+      }
+
+      /* Back link */
+      .back-link {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.375rem;
+        margin-top: 1.5rem;
+        color: var(--color-text-muted);
+        font-size: 0.8125rem;
+        text-decoration: none;
+        transition: color 0.2s;
+      }
+
+      .back-link:hover {
+        color: var(--color-text-secondary);
+      }
+
+      .back-link svg {
+        width: 0.875rem;
+        height: 0.875rem;
+      }
+
+      /* Footer */
+      footer {
+        border-top: 1px solid var(--color-border);
+        padding: 1rem 1.5rem;
+        display: flex;
+        align-items: center;
+        font-size: 0.75rem;
+        color: var(--color-text-muted);
+        flex-shrink: 0;
+      }
+
+      footer a {
+        color: var(--color-text-muted);
+        text-decoration: none;
+        transition: color 0.2s;
+      }
+
+      footer a:hover {
+        color: var(--color-text-secondary);
+      }
+
+      @media (max-width: 480px) {
+        .input-row {
+          flex-direction: column;
+        }
+        .input-row button {
+          width: 100%;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="page-content">
+      <div class="container">
+        <!-- Logo / Title -->
+        <div class="header">
+          <div class="logo-group">
+            <div class="logo-box">
+              <svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path fill-rule="evenodd" clip-rule="evenodd" d="M141 55C109.243 55 83.5 80.7436 83.5 112.5V342.5H40.375C32.4371 342.5 26 348.937 26 356.875V400C26 431.757 51.7428 457.5 83.5 457.5H342.25C374.006 457.5 399.75 431.757 399.75 400V83.75H428.5C444.378 83.75 457.25 96.6219 457.25 112.5C457.25 119.873 454.483 126.58 449.922 131.676C444.639 137.592 445.134 146.684 451.045 151.975C456.961 157.27 466.05 156.74 471.344 150.824C480.44 140.661 486 127.217 486 112.5C486 80.7436 460.256 55 428.5 55H141ZM371 400C371 415.879 358.128 428.75 342.25 428.75C326.372 428.75 313.5 415.879 313.5 400V356.875C313.5 348.937 307.064 342.5 299.125 342.5H112.25V112.5C112.25 96.6219 125.121 83.75 141 83.75H371V400ZM284.75 400C284.75 410.482 287.598 420.286 292.499 428.75H83.5C67.6214 428.75 54.75 415.879 54.75 400V371.25H284.75V400Z" fill="#D97757" stroke="#D97757" stroke-width="16"/>
+              </svg>
+            </div>
+            <h1>Skill Editor</h1>
+          </div>
+          <p class="subtitle">Get notified when new features drop</p>
+        </div>
+
+        <!-- Signup Card -->
+        <div class="form-card" id="formCard">
+          <p>We're building new tools for creating and managing agent skills. Join the waitlist to get early access and updates.</p>
+          <form class="input-row" id="waitlistForm" onsubmit="handleSubmit(event)">
+            <input
+              type="email"
+              id="emailInput"
+              name="email"
+              placeholder="you@example.com"
+              required
+              autocomplete="email"
+            />
+            <button type="submit">Join waitlist</button>
+          </form>
+          <div class="success-msg" id="successMsg">You're on the list. We'll be in touch.</div>
+        </div>
+
+        <a href="/" class="back-link">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+          Back to editor
+        </a>
+      </div>
+    </div>
+
+    <footer>
+      <a href="https://github.com/belgrademilos/Skill-Editor" target="_blank" rel="noopener noreferrer">GitHub</a>
+      <span style="margin: 0 0.5rem;" aria-hidden="true">&middot;</span>
+      <a href="/">skilleditor.com</a>
+    </footer>
+
+    <script>
+      function handleSubmit(e) {
+        e.preventDefault();
+        var email = document.getElementById('emailInput').value;
+
+        // TODO: Wire up to your ESP here
+        // Example: fetch('/api/waitlist', { method: 'POST', body: JSON.stringify({ email }) })
+        console.log('Waitlist signup:', email);
+
+        document.getElementById('formCard').classList.add('submitted');
+      }
+    </script>
+  </body>
+</html>
