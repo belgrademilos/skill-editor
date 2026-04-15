@@ -1,50 +1,29 @@
-import { useEffect, useCallback } from 'react'
-import { useSkillStore } from '../store/skillStore'
-import { packAsSkill, downloadBlob } from '../lib/zip'
-import { serializeFrontmatter } from '../lib/frontmatter'
+import { useEffect, useCallback } from 'react';
+import { useSkillStore } from '../store/skillStore';
+import { packAsSkill, downloadBlob } from '../lib/zip';
 
 export function useKeyboardShortcuts() {
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
-    const mod = e.metaKey || e.ctrlKey
+    const mod = e.metaKey || e.ctrlKey;
+    if (!mod) return;
 
-    if (!mod) return
-
-    const state = useSkillStore.getState()
+    const state = useSkillStore.getState();
 
     // Cmd+S — Export as .skill
     if (e.key === 's' && !e.shiftKey) {
-      e.preventDefault()
-      if (state.view !== 'editor') return
+      e.preventDefault();
 
-      const exportFiles = new Map(state.files)
-      for (const [path] of exportFiles) {
-        if (path === 'SKILL.md' || path.endsWith('/SKILL.md')) {
-          const fm = state.frontmatterMap.get(path)
-          if (fm) {
-            const body = exportFiles.get(path) || ''
-            exportFiles.set(path, serializeFrontmatter(fm, body))
-          }
-        }
-      }
-      const name = state.skillName || 'skill'
-      packAsSkill(exportFiles, name).then(blob => {
-        downloadBlob(blob, `${name}.skill`)
-      })
-      return
+      const files = new Map<string, string>();
+      files.set('SKILL.md', state.content);
+      const name = state.skillName || 'skill';
+      packAsSkill(files, name).then((blob) => {
+        downloadBlob(blob, `${name}.skill`);
+      });
     }
-
-    // Cmd+W — Close active tab
-    if (e.key === 'w' && !e.shiftKey) {
-      e.preventDefault()
-      if (state.activeFile) {
-        state.closeTab(state.activeFile)
-      }
-      return
-    }
-  }, [])
+  }, []);
 
   useEffect(() => {
-    document.addEventListener('keydown', handleKeyDown)
-    return () => document.removeEventListener('keydown', handleKeyDown)
-  }, [handleKeyDown])
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [handleKeyDown]);
 }

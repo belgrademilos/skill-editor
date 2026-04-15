@@ -3,10 +3,9 @@ import { useSkillStore } from '../store/skillStore'
 
 export function useBeforeUnload() {
   const isDirty = useSkillStore(s => s.isDirty)
-  const view = useSkillStore(s => s.view)
 
   useEffect(() => {
-    if (!isDirty || view !== 'editor') return
+    if (!isDirty) return
 
     const handler = (e: BeforeUnloadEvent) => {
       e.preventDefault()
@@ -14,5 +13,5 @@ export function useBeforeUnload() {
 
     window.addEventListener('beforeunload', handler)
     return () => window.removeEventListener('beforeunload', handler)
-  }, [isDirty, view])
+  }, [isDirty])
 }

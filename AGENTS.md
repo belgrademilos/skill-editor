@@ -1,10 +1,10 @@
 # AGENTS.md
 
-This file provides guidance to Codex (Codex.ai/code) when working with code in this repository.
+This file provides guidance to AI coding agents when working with code in this repository.
 
 ## What This Is
 
-Skill Editor — a free, browser-based editor for agent skills. Works with skills for any agent platform (Codex, Cursor, ChatGPT, Codex, Manus, and others). Users import `.skill`/`.zip`/`.md` files, edit with a rich markdown editor, and export them back. Hosted at `skilleditor.com` on Vercel.
+Skill Editor — a free, browser-based editor for agent skills. Works with skills for any agent platform (Claude Code, Cursor, ChatGPT, Codex, Manus, and others). Users import `.skill`/`.zip`/`.md` files, edit a single SKILL.md with a source-mode markdown editor, and export them back. Hosted at `skilleditor.com` on Vercel.
 
 ## Commands
 
@@ -18,8 +18,8 @@ Skill Editor — a free, browser-based editor for agent skills. Works with skill
 ## Tech Stack
 
 - React 19, TypeScript, Vite 7, Tailwind CSS v4 (via `@tailwindcss/vite` plugin)
-- **Novel** (TipTap/ProseMirror-based) for rich markdown editing of `.md` files, via a local fork in `src/novel/`
-- **Zustand** for state management (single store for the editor)
+- **CodeMirror 6** for source-mode markdown editing (custom theme, frontmatter highlighting)
+- **Zustand** for state management (two coordinated stores: active document + sidebar library)
 - **JSZip** for .skill/.zip pack/unpack
 - **gray-matter** for YAML frontmatter parsing
 - **idb-keyval** for IndexedDB session persistence
@@ -28,57 +28,77 @@ Skill Editor — a free, browser-based editor for agent skills. Works with skill
 
 ## Architecture
 
-### View Routing
+### Single-Screen, Single-File Focus
 
-The editor manages two views (`intro`, `editor`) via Zustand store, with browser history sync via `useViewHistorySync` hook (uses `window.history` directly, no router library). Deployment uses `vercel.json` with a catch-all SPA rewrite to `index.html`. An "About" modal (`AboutModal.tsx`) is triggered from the footer instead of separate pages.
+One screen: the editor. No intro/landing page, no view routing, no history sync — `SkillEditorApp.tsx` mounts `EditorLayout` directly and the library sidebar is always visible. The editor works on a single SKILL.md file at a time (full document, including YAML frontmatter, lives in one string). The left-hand sidebar lists skills in the local library and lets the user switch between them; import actions live in the sidebar header. Deployment uses `vercel.json` with a catch-all SPA rewrite to `index.html`.
 
 ### Editor Data Flow
 
-1. User uploads `.skill`/`.zip` → `lib/zip.ts` unpacks → `skillStore` loads files into a `Map<string, string>`
-2. SKILL.md frontmatter is parsed separately (`lib/frontmatter.ts`) and managed in store state; the files map only holds the markdown body
-3. On export, frontmatter is re-serialized and injected back into SKILL.md before packing
+1. User adds a skill via the sidebar "+" menu (upload `.skill`/`.zip`/`.md` or import from GitHub) → source is resolved into a SKILL.md string
+   - Uploads: `lib/parseSkill.ts` validates/parses the file and extracts the full document content
+   - Archives (`.skill`/`.zip`): `lib/zip.ts` unpacks → locates SKILL.md
+   - Plain `.md`: read directly, validated for required frontmatter
+   - GitHub: `parseSkillFromGitHub()` parses the URL, fetches `raw.githubusercontent.com/{owner}/{repo}/{branch}/SKILL.md` from `main` then `master`
+2. The full document string (with `---` frontmatter block) is passed directly to CodeMirror
+3. `skillName` is derived reactively by parsing frontmatter from the content on each update
+4. On export, `store.content` is the complete file — no reassembly needed
 
 ### Key Files
 
-- `src/store/skillStore.ts` — Central Zustand store. All file CRUD, tab/UI state, session persistence (debounced 1s to IndexedDB). Source of truth for the editor.
-- `src/SkillEditorApp.tsx` — Editor entry point (view switching, hooks).
-- `src/lib/zip.ts` — Zip pack/unpack, file tree building, common prefix stripping, download helpers
-- `src/lib/frontmatter.ts` — YAML frontmatter parse/serialize using gray-matter
-- `src/lib/storage.ts` — IndexedDB persistence via idb-keyval
-- `src/components/EditorLayout.tsx` — Main layout: resizable sidebar + tabs + editor. Routes files to the correct editor component based on file type.
-- `src/components/Editor/NovelEditor.tsx` — Rich markdown editor (Novel/TipTap). Wraps EditorRoot/EditorContent from the local Novel fork, configures extensions, image upload, slash commands, and hosts the TableOfContents overlay.
-- `src/components/Editor/BubbleToolbar.tsx` — Floating formatting toolbar (bold, italic, link, etc.) that appears on text selection.
-- `src/components/Editor/TableOfContents.tsx` — Floating TOC navigation that overlays the right side of the editor. Extracts H1/H2/H3 headings, highlights the active heading on scroll, and smooth-scrolls to headings on click. Visible on xl+ screens only.
-- `src/components/Editor/SlashCommandItems.tsx` — Slash command menu items (headings, lists, images, tables, etc.)
-- `src/components/Editor/PlainTextEditor.tsx` — Plain textarea for non-markdown text files
-- `src/components/Editor/ImagePreview.tsx` — Read-only preview for image files
-- `src/components/Editor/HtmlPreview.tsx` — Read-only preview for HTML files
-- `src/components/Editor/SkillHeader.tsx` — Name/description fields shown only when editing SKILL.md
-- `src/novel/` — Local fork of the Novel editor framework. Contains EditorRoot, EditorContent, EditorCommand, EditorBubble, extensions (StarterKit, Table, Image, etc.), and plugins.
+- `src/store/skillStore.ts` — Central Zustand store for the **active** skill. Single `content` string (full document), `skillName` derived from frontmatter, session persistence (debounced 1s to IndexedDB). Exposes `restoreSession`, `updateContent`, `setActiveContent`, and lower-level import helpers still covered by tests.
+- `src/store/skillLibraryStore.ts` — Zustand store for the sidebar library: array of `SkillEntry { id, name, content }`, `selectedId`. Seeded with placeholder skills. Actions: `selectSkill`, `addSkill`, `removeSkill`, `updateSelectedContent`. Exports `syncLibraryWithRestoredContent()` to align selection and the matching row after session restore.
+- `src/SkillEditorApp.tsx` — App entry point. Installs `useBeforeUnload` and restores the persisted session on mount, then renders `EditorLayout`.
+- `src/components/EditorLayout.tsx` — Main layout: horizontal flex with `SkillSidebar` and the editor pane (`EditorToolbar`, CodeMirror, `SiteFooter`).
+- `src/components/SkillSidebar.tsx` — Left-hand skills panel. Header with "Skills" label and "+" add menu (Upload / Import GitHub URL), scrollable list of skill entries, and a bottom auth/promo card with the placeholder "Log in" CTA.
+- `src/components/EditorToolbar.tsx` — Minimal toolbar: skill name display and export dropdown (.skill / .md).
+- `src/components/SiteFooter.tsx` — Footer for the editor pane showing the live token count from `skillDocumentStats`.
+- `src/components/Editor/SkillEditor.tsx` — React wrapper around CodeMirror.
+- `src/components/Editor/useCodeMirror.ts` — Thin React ↔ CodeMirror 6 bridge. `useRef` + `useEffect`, controlled value sync, save keybinding, history, search.
+- `src/components/Editor/theme.ts` — CodeMirror dark theme (`skillEditorTheme`) and markdown `HighlightStyle` (`skillHighlightStyle`). **Layout:** JetBrains Mono / SF Mono / Fira Code stack, 14px, no gutter; content area centered with `max-width: 820px`, generous horizontal padding (`24px 48px`) and bottom padding for scroll comfort; thin WebKit scrollbar. **Chrome:** selection background `#364559`, caret `#E0E0E0` (2px cursor). **Highlighting:** headings in light grays with stepped sizes; bold/italic distinct; links `#6699CC`; list markers and meta muted; inline/fenced monospace `#E07070` (rule last so merged tags resolve correctly). Frontmatter YAML uses `tags.meta` / `propertyName` / `string` etc.
+- `src/components/Editor/frontmatter.ts` — Lezer markdown parser extension that recognizes YAML frontmatter blocks (`---` delimiters).
+- `src/components/Editor/frontmatterDecoration.ts` — `ViewPlugin` that decorates frontmatter lines: keys bold white, values blue-gray (#8C8CA6), delimiters muted gray.
+- `src/hooks/useBeforeUnload.ts` — Warns on page unload when `skillStore.isDirty` is true.
+- `src/hooks/useKeyboardShortcuts.ts` — App-level shortcuts (e.g. Cmd/Ctrl+S exports as `.skill`).
+- `src/lib/parseSkill.ts` — Shared import parsing helpers for uploads and GitHub URL imports.
+- `src/lib/zip.ts` — Zip pack/unpack, file tree building, common prefix stripping, download helpers.
+- `src/lib/frontmatter.ts` — YAML frontmatter parse/serialize using gray-matter.
+- `src/lib/skillDocumentStats.ts` — Token count estimation for the footer display.
+- `src/lib/storage.ts` — IndexedDB persistence via idb-keyval.
 
 ### Important Patterns
 
-- **Frontmatter separation**: SKILL.md body is stored in the files map; frontmatter lives in `store.frontmatter` (and `frontmatterMap` for multi-SKILL archives). They are only recombined on export via `serializeFrontmatter()`.
-- **Editor routing by file type**: `.md` files → NovelEditor, images → ImagePreview, `.html` → HtmlPreview, everything else → PlainTextEditor.
-- **Session auto-save**: Every mutation calls `persistSession()` which debounces to IndexedDB. On reload, `restoreSession()` recovers the full editing state.
-- **File tree**: Built dynamically from the files map keys via `buildTree()`. SKILL.md is always sorted first.
+- **Full-document editing**: The store holds the complete SKILL.md content (frontmatter + body). No separation — what the user sees is what gets exported.
+- **Reactive skill name**: `skillName` is extracted from frontmatter on every content update via `parseFrontmatter()`. No separate name/description fields to keep in sync.
+- **Two-store split**: `skillStore` holds the active document being edited; `skillLibraryStore` holds the sidebar list. Editor changes propagate to the library via `updateSelectedContent`, and sidebar selection writes back into the editor via `setActiveContent`.
+- **Session auto-save**: Every mutation calls `persistSession()` which debounces to IndexedDB. On reload, `restoreSession()` recovers the full editing state. Backwards-compatible with old multi-file session format.
+- **Session restore + library**: The library is not persisted — only the active document is. On load, `restoreSession()` runs after the library resets to its initial selection (first placeholder). `syncLibraryWithRestoredContent(content)` matches frontmatter `name` to a library entry `id`/`name`, sets `selectedId`, and applies the restored document to that row so edits do not overwrite the wrong sidebar slot.
+- **GitHub import (V1)**: `parseSkillFromGitHub()` accepts a public GitHub repo URL, parses `owner/repo`, and tries `raw.githubusercontent.com/.../main/SKILL.md` then `.../master/SKILL.md`. No auth, no branch selection, no subdirectory support yet. Errors surface as "Invalid link" in the sidebar GitHub import modal.
+- **Spellcheck disabled**: The editor sets `spellcheck: false` — no red squiggly underlines.
 - **Vite config**: Polyfills `process.env`, `global`, and `Buffer` for gray-matter (Node library) to work in browser.
-- **View routing**: Editor has two views (`intro`, `editor`) managed in Zustand store, with browser history sync via `useViewHistorySync` hook. About info is shown in a modal from the footer.
 
 ## Deployment
 
 - Hosted on Vercel at `skilleditor.com`. `vercel.json` has a catch-all SPA rewrite to `index.html`.
 - `@vercel/analytics/react` is included in `App.tsx` but auto-disables outside Vercel — no env vars needed to run locally.
-- No secrets or API keys in the codebase. If Vercel-specific env vars are added later, use `import.meta.env.VITE_*` and add placeholders to `.env.example`.
+- No secrets or API keys in the codebase. If Vercel-specific env vars are added later, use `import.meta.env.VITE_`* and add placeholders to `.env.example`.
 
 ## Open Source
 
 - MIT licensed, single-repo approach. Deployment-specific code (analytics) gracefully no-ops for local/non-Vercel contributors.
 - Contributors can clone and run `npm install && npm run dev` without any Vercel setup.
 
+## Roadmap
+
+See `nstextview-browser-plan.md` for the full plan. Phases 1–4 (core editor, theme, markdown highlighting, YAML frontmatter) are complete. Remaining:
+- Phase 5: Edit/preview toggle (Cmd+Shift+P)
+- Phase 6: Markdown commands & keybindings (Cmd+B/I/E/K, smart list behaviors)
+- Phase 7: File I/O & state management refinements
+- Phase 8: Polish (dark/light theme, focus management, accessibility, performance)
+
 ## SKILL.md Format
 
 See `Skill-MD-Format-Rules.md` for the complete spec. Key points:
+
 - YAML frontmatter with `name` and `description` required
 - Name: lowercase, hyphens, digits only, max 64 chars
 - Description should explain what the skill does AND when to trigger it
