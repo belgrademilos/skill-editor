@@ -1,21 +1,13 @@
 import { useState, useRef, useEffect } from 'react';
-import { useAuth } from '@workos-inc/authkit-react';
-import { Plus, Upload, Github, Loader2, UserRound } from 'lucide-react';
+import { Plus, Upload, Github, Loader2, UserRound, MoreHorizontal, Copy, Trash2 } from 'lucide-react';
 import { useSkillLibraryStore } from '../store/skillLibraryStore';
 import { useSkillStore } from '../store/skillStore';
 import { parseSkillFile, parseSkillFromGitHub } from '../lib/parseSkill';
+import { useAuth } from '../hooks/useAuth';
+import { AuthModal } from './AuthModal';
 
-function getInitials(email: string, firstName: string | null, lastName: string | null) {
-  const fromNames = [firstName, lastName]
-    .filter(Boolean)
-    .map((value) => value!.trim().charAt(0).toUpperCase())
-    .join('');
-
-  if (fromNames) {
-    return fromNames.slice(0, 2);
-  }
-
-  return email.trim().charAt(0).toUpperCase() || '?';
+function getInitials(email: string | undefined) {
+  return (email?.trim().charAt(0).toUpperCase()) || '?';
 }
 
 export function SkillSidebar() {
@@ -23,15 +15,22 @@ export function SkillSidebar() {
   const selectedId = useSkillLibraryStore((s) => s.selectedId);
   const selectSkill = useSkillLibraryStore((s) => s.selectSkill);
   const addSkill = useSkillLibraryStore((s) => s.addSkill);
+  const removeSkill = useSkillLibraryStore((s) => s.removeSkill);
+  const duplicateSkill = useSkillLibraryStore((s) => s.duplicateSkill);
   const setActiveContent = useSkillStore((s) => s.setActiveContent);
-  const { isLoading, user, signIn, signOut } = useAuth();
+  const { isLoading, user, signOut } = useAuth();
 
   const [addOpen, setAddOpen] = useState(false);
+  const [authOpen, setAuthOpen] = useState(false);
   const [githubOpen, setGithubOpen] = useState(false);
   const [githubUrl, setGithubUrl] = useState('');
   const [githubLoading, setGithubLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [rowMenuOpen, setRowMenuOpen] = useState<string | null>(null);
+  const [rowMenuPos, setRowMenuPos] = useState<{ top: number; left: number } | null>(null);
   const addMenuRef = useRef<HTMLDivElement>(null);
+  const rowMenuRef = useRef<HTMLDivElement>(null);
+  const rowMenuButtonRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     if (!addOpen) return;
@@ -43,6 +42,28 @@ export function SkillSidebar() {
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
   }, [addOpen]);
+
+  useEffect(() => {
+    if (!rowMenuOpen) return;
+    const handler = (e: MouseEvent) => {
+      const target = e.target as Node;
+      if (
+        rowMenuRef.current && !rowMenuRef.current.contains(target) &&
+        rowMenuButtonRef.current && !rowMenuButtonRef.current.contains(target)
+      ) {
+        setRowMenuOpen(null);
+      }
+    };
+    const close = () => setRowMenuOpen(null);
+    document.addEventListener('mousedown', handler);
+    window.addEventListener('resize', close);
+    window.addEventListener('scroll', close, true);
+    return () => {
+      document.removeEventListener('mousedown', handler);
+      window.removeEventListener('resize', close);
+      window.removeEventListener('scroll', close, true);
+    };
+  }, [rowMenuOpen]);
 
   const showError = (msg: string) => {
     setError(msg);
@@ -99,23 +120,35 @@ export function SkillSidebar() {
     }
   };
 
+  const handleDuplicate = (id: string) => {
+    setRowMenuOpen(null);
+    const newEntry = duplicateSkill(id);
+    if (newEntry) setActiveContent(newEntry.content);
+  };
+
+  const handleDelete = (id: string) => {
+    setRowMenuOpen(null);
+    removeSkill(id);
+    const next = useSkillLibraryStore.getState();
+    const active = next.skills.find((s) => s.id === next.selectedId);
+    if (active) setActiveContent(active.content);
+  };
+
   const handleSignIn = () => {
-    void signIn({ state: { returnTo: '/' } });
+    setAuthOpen(true);
   };
 
   const handleSignOut = () => {
-    signOut({ returnTo: `${window.location.origin}/` });
+    void signOut();
   };
 
   const showSignedOutCard = isLoading || !user;
-  const initials = user
-    ? getInitials(user.email, user.firstName, user.lastName)
-    : '?';
+  const initials = getInitials(user?.email);
 
   return (
     <>
       <div className="w-64 shrink-0 bg-bg-sidebar border-r border-border flex flex-col h-full">
-        <div className="flex h-11 shrink-0 items-center justify-between gap-2 px-4 border-b border-border">
+        <div className="flex h-11 shrink-0 items-center justify-between gap-2 pl-4 pr-3 border-b border-border">
           <span className="text-sm font-semibold leading-none text-text-primary">
             Skills
           </span>
@@ -156,19 +189,48 @@ export function SkillSidebar() {
         )}
 
         <div className="flex-1 overflow-y-auto py-1 px-2">
-          {skills.map((skill) => (
-            <button
-              key={skill.id}
-              onClick={() => handleSelect(skill.id)}
-              className={`w-full text-left px-4 py-2 text-sm flex items-center gap-2.5 rounded-lg transition-colors ${
-                selectedId === skill.id
-                  ? 'bg-accent text-white'
-                  : 'text-text-secondary hover:bg-bg-hover hover:text-text-primary'
-              }`}
-            >
-              <span className="truncate">{skill.name}</span>
-            </button>
-          ))}
+          {skills.map((skill) => {
+            const isSelected = selectedId === skill.id;
+            const isMenuOpen = rowMenuOpen === skill.id;
+            return (
+              <div key={skill.id} className="relative">
+                <button
+                  onClick={() => handleSelect(skill.id)}
+                  className={`w-full text-left py-2 text-sm flex items-center gap-2.5 rounded-lg transition-colors ${
+                    isSelected ? 'pl-4 pr-10' : 'px-4'
+                  } ${
+                    isSelected
+                      ? 'bg-accent text-white'
+                      : 'text-text-secondary hover:bg-bg-hover hover:text-text-primary'
+                  }`}
+                >
+                  <span className="truncate">{skill.name}</span>
+                </button>
+                {isSelected && (
+                  <div className="absolute right-1.5 top-1/2 -translate-y-1/2">
+                    <button
+                      ref={isMenuOpen ? rowMenuButtonRef : undefined}
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (rowMenuOpen === skill.id) {
+                          setRowMenuOpen(null);
+                          return;
+                        }
+                        const rect = e.currentTarget.getBoundingClientRect();
+                        setRowMenuPos({ top: rect.bottom + 4, left: rect.left });
+                        setRowMenuOpen(skill.id);
+                      }}
+                      className="inline-flex size-7 items-center justify-center rounded-md text-white/80 hover:text-white hover:bg-white/15 transition-colors"
+                      title="More actions"
+                    >
+                      <MoreHorizontal className="size-4" aria-hidden />
+                    </button>
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </div>
 
         <div className="shrink-0 border-t border-border p-4">
@@ -191,17 +253,9 @@ export function SkillSidebar() {
           ) : (
             <div className="rounded-xl border border-border bg-bg-surface px-3 py-3">
               <div className="flex items-center gap-3">
-                {user.profilePictureUrl ? (
-                  <img
-                    src={user.profilePictureUrl}
-                    alt=""
-                    className="size-10 shrink-0 rounded-full object-cover"
-                  />
-                ) : (
-                  <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-bg-hover text-xs font-semibold text-text-primary">
-                    {initials === '?' ? <UserRound className="size-4" /> : initials}
-                  </div>
-                )}
+                <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-bg-hover text-xs font-semibold text-text-primary">
+                  {initials === '?' ? <UserRound className="size-4" /> : initials}
+                </div>
                 <div className="min-w-0 flex-1">
                   <p className="text-[11px] font-semibold leading-4 text-text-primary">
                     Signed in
@@ -222,6 +276,29 @@ export function SkillSidebar() {
           )}
         </div>
       </div>
+
+      {rowMenuOpen && rowMenuPos && (
+        <div
+          ref={rowMenuRef}
+          style={{ position: 'fixed', top: rowMenuPos.top, left: rowMenuPos.left }}
+          className="z-50 w-40 rounded-lg bg-bg-surface border border-border shadow-lg py-1"
+        >
+          <button
+            onClick={() => handleDuplicate(rowMenuOpen)}
+            className="w-full text-left px-3 py-2 text-sm text-text-primary hover:bg-bg-hover transition-colors flex items-center gap-2"
+          >
+            <Copy className="w-3.5 h-3.5 text-text-muted" />
+            Duplicate
+          </button>
+          <button
+            onClick={() => handleDelete(rowMenuOpen)}
+            className="w-full text-left px-3 py-2 text-sm text-danger hover:bg-bg-hover transition-colors flex items-center gap-2"
+          >
+            <Trash2 className="w-3.5 h-3.5" />
+            Delete
+          </button>
+        </div>
+      )}
 
       {githubOpen && (
         <div
@@ -273,6 +350,8 @@ export function SkillSidebar() {
           </div>
         </div>
       )}
+
+      <AuthModal open={authOpen} onClose={() => setAuthOpen(false)} />
     </>
   );
 }

@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { parseFrontmatter } from '../lib/frontmatter';
+import { parseFrontmatter, serializeFrontmatter } from '../lib/frontmatter';
 import elevenStarSkill from './placeholder-skills/11-star-framework.md?raw';
 import appNamingSkill from './placeholder-skills/app-naming.md?raw';
 import frontendSlidesSkill from './placeholder-skills/frontend-slides.md?raw';
@@ -18,6 +18,7 @@ interface SkillLibraryState {
   selectSkill: (id: string) => void;
   addSkill: (entry: SkillEntry) => void;
   removeSkill: (id: string) => void;
+  duplicateSkill: (id: string) => SkillEntry | null;
   updateSelectedContent: (content: string) => void;
 }
 
@@ -78,7 +79,7 @@ export function syncLibraryWithRestoredContent(content: string): void {
   });
 }
 
-export const useSkillLibraryStore = create<SkillLibraryState>((set) => ({
+export const useSkillLibraryStore = create<SkillLibraryState>((set, get) => ({
   skills: PLACEHOLDER_SKILLS,
   selectedId: PLACEHOLDER_SKILLS[0]?.id ?? null,
 
@@ -91,10 +92,60 @@ export const useSkillLibraryStore = create<SkillLibraryState>((set) => ({
     })),
 
   removeSkill: (id) =>
-    set((state) => ({
-      skills: state.skills.filter((s) => s.id !== id),
-      selectedId: state.selectedId === id ? null : state.selectedId,
-    })),
+    set((state) => {
+      const skills = state.skills.filter((s) => s.id !== id);
+      let selectedId = state.selectedId;
+      if (selectedId === id) {
+        const removedIndex = state.skills.findIndex((s) => s.id === id);
+        const fallback =
+          skills[removedIndex] ?? skills[removedIndex - 1] ?? skills[0] ?? null;
+        selectedId = fallback?.id ?? null;
+      }
+      return { skills, selectedId };
+    }),
+
+  duplicateSkill: (id) => {
+    const state = get();
+    const source = state.skills.find((s) => s.id === id);
+    if (!source) return null;
+
+    const existingNames = new Set(state.skills.map((s) => s.name));
+    const existingIds = new Set(state.skills.map((s) => s.id));
+
+    const baseName = source.name.replace(/-(\d+)$/, '');
+    let n = 2;
+    let newName = `${baseName}-${n}`;
+    while (existingNames.has(newName) || existingIds.has(newName)) {
+      n += 1;
+      newName = `${baseName}-${n}`;
+    }
+
+    let newContent = source.content;
+    try {
+      const parsed = parseFrontmatter(source.content);
+      newContent = serializeFrontmatter(
+        { ...parsed.frontmatter, name: newName },
+        parsed.body
+      );
+    } catch {
+      // Fallback: keep original content if frontmatter can't be parsed
+    }
+
+    const newEntry: SkillEntry = {
+      id: `${newName}-${Date.now()}`,
+      name: newName,
+      content: newContent,
+    };
+
+    set((s) => {
+      const index = s.skills.findIndex((sk) => sk.id === id);
+      const skills = [...s.skills];
+      skills.splice(index + 1, 0, newEntry);
+      return { skills, selectedId: newEntry.id };
+    });
+
+    return newEntry;
+  },
 
   updateSelectedContent: (content) =>
     set((state) => {
