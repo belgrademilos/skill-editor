@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
-import { Plus, Upload, Github, Loader2, UserRound, MoreHorizontal, Copy, Trash2 } from 'lucide-react';
+import { Plus, Upload, Github, Loader2, UserRound, MoreHorizontal, Copy, Trash2, FilePlus } from 'lucide-react';
+import { serializeFrontmatter } from '../lib/frontmatter';
 import { useSkillLibraryStore } from '../store/skillLibraryStore';
 import { useSkillStore } from '../store/skillStore';
 import { parseSkillFile, parseSkillFromGitHub } from '../lib/parseSkill';
@@ -75,6 +76,23 @@ export function SkillSidebar() {
     if (!skill) return;
     selectSkill(id);
     setActiveContent(skill.content);
+  };
+
+  const handleNew = () => {
+    setAddOpen(false);
+    const existingNames = new Set(skills.map((s) => s.name));
+    const existingIds = new Set(skills.map((s) => s.id));
+    const base = 'untitled-skill';
+    let name = base;
+    let n = 2;
+    while (existingNames.has(name) || existingIds.has(name)) {
+      name = `${base}-${n}`;
+      n += 1;
+    }
+    const content = serializeFrontmatter({ name, description: '' }, '\n');
+    const id = `${name}-${Date.now()}`;
+    addSkill({ id, name, content });
+    setActiveContent(content);
   };
 
   const handleUpload = () => {
@@ -163,6 +181,13 @@ export function SkillSidebar() {
             </button>
             {addOpen && (
               <div className="absolute left-0 top-full z-50 mt-1 w-48 rounded-lg bg-bg-surface border border-border shadow-lg py-1">
+                <button
+                  onClick={handleNew}
+                  className="w-full text-left px-3 py-2 text-sm text-text-primary hover:bg-bg-hover transition-colors flex items-center gap-2"
+                >
+                  <FilePlus className="w-3.5 h-3.5 text-text-muted" />
+                  New
+                </button>
                 <button
                   onClick={handleUpload}
                   className="w-full text-left px-3 py-2 text-sm text-text-primary hover:bg-bg-hover transition-colors flex items-center gap-2"
