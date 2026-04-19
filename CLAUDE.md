@@ -20,7 +20,6 @@ Skill Editor — a free, browser-based editor for agent skills. Works with skill
 - React 19, TypeScript, Vite 7, Tailwind CSS v4 (via `@tailwindcss/vite` plugin)
 - **CodeMirror 6** for source-mode markdown editing (custom theme, frontmatter highlighting)
 - **Zustand** for state management (single store)
-- **Supabase** (`@supabase/supabase-js`) for email/password auth
 - **JSZip** for .skill/.zip pack/unpack
 - **gray-matter** for YAML frontmatter parsing
 - **idb-keyval** for IndexedDB session persistence
@@ -49,11 +48,7 @@ One screen: the editor. No intro/landing page, no view routing, no history sync 
 - `src/store/skillLibraryStore.ts` — Zustand store for the sidebar library: array of `SkillEntry { id, name, content }`, `selectedId`, `sidebarOpen`. Seeded with placeholder skills. Actions: `selectSkill`, `addSkill`, `removeSkill`, `toggleSidebar`, `updateSelectedContent`.
 - `src/SkillEditorApp.tsx` — App entry point. Installs `useBeforeUnload` and restores the persisted session on mount, then renders `EditorLayout`.
 - `src/components/EditorLayout.tsx` — Main layout: horizontal flex with `SkillSidebar` + (toolbar + CodeMirror editor), with `SiteFooter` at the bottom.
-- `src/components/SkillSidebar.tsx` — Left-hand skills panel. Header with "Skills" label and "+" add menu (Upload / Import GitHub URL), scrollable list of skill entries. Clicking an entry selects it and loads its content into `skillStore` via `setActiveContent`. Footer holds the auth card: signed-out state shows a "Log in" button that opens `AuthModal`; signed-in state shows email + initials avatar + sign-out.
-- `src/components/AuthModal.tsx` — Email/password modal with sign-in ↔ sign-up toggle. Calls `useAuth().signIn`/`signUp` and surfaces Supabase errors inline.
-- `src/lib/supabase.ts` — Singleton Supabase client created from `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY`. Throws at import time if either is missing.
-- `src/store/authStore.ts` — Zustand store for `{ user, session, isLoading }`. Exports `initAuth()` which runs once to call `supabase.auth.getSession()` and subscribe to `onAuthStateChange`.
-- `src/hooks/useAuth.ts` — Thin hook that ensures `initAuth()` has run and exposes `{ user, session, isLoading, signIn, signUp, signOut }`. Auth methods return Supabase's raw `{ data, error }` so callers can surface errors.
+- `src/components/SkillSidebar.tsx` — Left-hand skills panel. Header with "Skills" label and "+" add menu (Upload / Import GitHub URL), scrollable list of skill entries. Clicking an entry selects it and loads its content into `skillStore` via `setActiveContent`. Footer holds a disabled "Sign in (coming soon)" placeholder — no auth provider is currently wired up.
 - `src/components/EditorToolbar.tsx` — Minimal toolbar: skill name display, dirty indicator, export dropdown (.skill / .md).
 - `src/components/SiteFooter.tsx` — Footer with two cells: left (sidebar-width) holds a GitHub repo link + "WTF is Skill Editor?" button that opens `AboutModal`; right cell shows the live token count from `skillDocumentStats`.
 - `src/components/AboutModal.tsx` — Modal triggered from the footer.
@@ -78,14 +73,14 @@ One screen: the editor. No intro/landing page, no view routing, no history sync 
 - **GitHub import (V1)**: `loadFromGitHub()` accepts a public GitHub repo URL, parses `owner/repo`, and tries `raw.githubusercontent.com/.../main/SKILL.md` then `.../master/SKILL.md`. No auth, no branch selection, no subdirectory support yet. Errors surface as "Invalid link" in the sidebar GitHub import modal.
 - **Spellcheck disabled**: The editor sets `spellcheck: false` — no red squiggly underlines.
 - **Vite config**: Polyfills `process.env`, `global`, and `Buffer` for gray-matter (Node library) to work in browser.
-- **Auth is optional**: Logged-out users can use the full editor with IndexedDB persistence. Sign-in is a sidebar action that unlocks future cloud features — no routes, no gating, no callback pages. Supabase's default localStorage session persists across refreshes. Sign-out does not clear IndexedDB.
+- **No auth**: The app runs entirely client-side with IndexedDB persistence. The sidebar "Sign in" button is a disabled placeholder reserved for a future provider.
 
 ## Deployment
 
 - Hosted on Vercel at `skilleditor.com`. `vercel.json` has a catch-all SPA rewrite to `index.html`.
 - `@vercel/analytics/react` is included in `App.tsx` but auto-disables outside Vercel — no env vars needed to run locally.
-- Supabase is the only external service: set `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` locally in `.env` and in Vercel. The anon key is public by design; RLS enforces access. "Confirm email" should be OFF in the Supabase dashboard for MVP signup-and-go.
-- No private secrets in the codebase. Use `import.meta.env.VITE_*` for any new envs and add placeholders to `.env.example`.
+- No external services or env vars required — the app is fully client-side.
+- No private secrets in the codebase. Use `import.meta.env.VITE_*` for any future envs.
 
 ## Open Source
 

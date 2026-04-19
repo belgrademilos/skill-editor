@@ -16,7 +16,7 @@ A free, browser-based editor for agent skills. Works with skills for any agent p
 
 ## Tech Stack
 
-React 19, TypeScript, Vite 7, Tailwind CSS v4, CodeMirror 6, Zustand, JSZip, gray-matter, idb-keyval
+React 19, TypeScript, Vite 7, Tailwind CSS v4, CodeMirror 6, Zustand, JSZip, idb-keyval
 
 ## Getting Started
 
@@ -26,18 +26,6 @@ npm run dev
 ```
 
 Open [http://localhost:5173](http://localhost:5173) in your browser.
-
-## Environment
-
-Create a `.env.local` with:
-
-```bash
-VITE_WORKOS_CLIENT_ID=your_workos_client_id
-# Optional in production if you have a WorkOS custom auth domain:
-VITE_WORKOS_API_HOSTNAME=auth.yourdomain.com
-```
-
-If `VITE_WORKOS_API_HOSTNAME` is not set, the app uses AuthKit `devMode` so the client-only login flow can persist its session without a custom auth domain.
 
 ## Scripts
 

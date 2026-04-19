@@ -1,4 +1,5 @@
 import { tags } from '@lezer/highlight';
+import type { BlockContext, Line } from '@lezer/markdown';
 
 /**
  * Markdown extension that recognizes YAML frontmatter blocks
@@ -15,7 +16,7 @@ export const frontmatterSupport = {
     {
       name: 'FrontMatter',
       before: 'HorizontalRule',
-      parse(cx: any, line: any) {
+      parse(cx: BlockContext, line: Line) {
         // Frontmatter must start at the very beginning of the document
         if (cx.lineStart !== 0) return false;
 

@@ -1,19 +1,9 @@
-import { unpackSkill, stripCommonPrefix } from './zip';
+import { readSkillMdFromArchive } from './zip';
 import { parseFrontmatter } from './frontmatter';
 
 export interface ParsedSkill {
   name: string;
   content: string;
-}
-
-function findSkillMd(files: Map<string, string>): string | null {
-  for (const key of files.keys()) {
-    if (key === 'SKILL.md' || key.endsWith('/SKILL.md')) return key;
-  }
-  for (const key of files.keys()) {
-    if (key.endsWith('.md')) return key;
-  }
-  return null;
 }
 
 export async function parseSkillFile(file: File): Promise<ParsedSkill> {
@@ -29,11 +19,7 @@ export async function parseSkillFile(file: File): Promise<ParsedSkill> {
   }
 
   if (ext === 'skill' || ext === 'zip') {
-    const { files: rawFiles } = await unpackSkill(file);
-    const files = stripCommonPrefix(rawFiles);
-    const skillMdPath = findSkillMd(files);
-    if (!skillMdPath) throw new Error('No SKILL.md found in archive.');
-    const content = files.get(skillMdPath)!;
+    const content = await readSkillMdFromArchive(file);
     const name = parseFrontmatter(content).frontmatter.name || 'untitled';
     return { name, content };
   }

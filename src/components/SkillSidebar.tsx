@@ -1,15 +1,9 @@
 import { useState, useRef, useEffect } from 'react';
-import { Plus, Upload, Github, Loader2, UserRound, MoreHorizontal, Copy, Trash2, FilePlus } from 'lucide-react';
+import { Plus, Upload, Github, Loader2, MoreHorizontal, Copy, Trash2, FilePlus } from 'lucide-react';
 import { serializeFrontmatter } from '../lib/frontmatter';
 import { useSkillLibraryStore } from '../store/skillLibraryStore';
 import { useSkillStore } from '../store/skillStore';
 import { parseSkillFile, parseSkillFromGitHub } from '../lib/parseSkill';
-import { useAuth } from '../hooks/useAuth';
-import { AuthModal } from './AuthModal';
-
-function getInitials(email: string | undefined) {
-  return (email?.trim().charAt(0).toUpperCase()) || '?';
-}
 
 export function SkillSidebar() {
   const skills = useSkillLibraryStore((s) => s.skills);
@@ -19,10 +13,8 @@ export function SkillSidebar() {
   const removeSkill = useSkillLibraryStore((s) => s.removeSkill);
   const duplicateSkill = useSkillLibraryStore((s) => s.duplicateSkill);
   const setActiveContent = useSkillStore((s) => s.setActiveContent);
-  const { isLoading, user, signOut } = useAuth();
 
   const [addOpen, setAddOpen] = useState(false);
-  const [authOpen, setAuthOpen] = useState(false);
   const [githubOpen, setGithubOpen] = useState(false);
   const [githubUrl, setGithubUrl] = useState('');
   const [githubLoading, setGithubLoading] = useState(false);
@@ -152,17 +144,6 @@ export function SkillSidebar() {
     if (active) setActiveContent(active.content);
   };
 
-  const handleSignIn = () => {
-    setAuthOpen(true);
-  };
-
-  const handleSignOut = () => {
-    void signOut();
-  };
-
-  const showSignedOutCard = isLoading || !user;
-  const initials = getInitials(user?.email);
-
   return (
     <>
       <div className="w-64 shrink-0 bg-bg-sidebar border-r border-border flex flex-col h-full">
@@ -259,46 +240,19 @@ export function SkillSidebar() {
         </div>
 
         <div className="shrink-0 border-t border-border p-4">
-          {showSignedOutCard ? (
-            <>
-              <p className="text-[11px] font-semibold leading-4 text-text-primary">
-                Save your skills
-              </p>
-              <p className="mt-2 text-[11px] leading-4 text-text-secondary">
-                Log in to keep your skill library connected across devices as cloud features roll out.
-              </p>
-              <button
-                type="button"
-                onClick={handleSignIn}
-                className="mt-3 w-full rounded-full border border-border bg-transparent px-3 py-1.5 text-sm font-medium text-text-primary transition-colors hover:bg-bg-hover"
-              >
-                Log in
-              </button>
-            </>
-          ) : (
-            <div className="rounded-xl border border-border bg-bg-surface px-3 py-3">
-              <div className="flex items-center gap-3">
-                <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-bg-hover text-xs font-semibold text-text-primary">
-                  {initials === '?' ? <UserRound className="size-4" /> : initials}
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="text-[11px] font-semibold leading-4 text-text-primary">
-                    Signed in
-                  </p>
-                  <p className="mt-1 truncate text-xs leading-4 text-text-secondary">
-                    {user.email}
-                  </p>
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={handleSignOut}
-                className="mt-3 w-full rounded-full border border-border bg-transparent px-3 py-1.5 text-sm font-medium text-text-primary transition-colors hover:bg-bg-hover"
-              >
-                Sign out
-              </button>
-            </div>
-          )}
+          <p className="text-[11px] font-semibold leading-4 text-text-primary">
+            Save your skills
+          </p>
+          <p className="mt-2 text-[11px] leading-4 text-text-secondary">
+            Cloud sync is coming soon.
+          </p>
+          <button
+            type="button"
+            disabled
+            className="mt-3 w-full cursor-not-allowed rounded-full border border-border bg-transparent px-3 py-1.5 text-sm font-medium text-text-muted opacity-60"
+          >
+            Sign in (coming soon)
+          </button>
         </div>
       </div>
 
@@ -376,7 +330,6 @@ export function SkillSidebar() {
         </div>
       )}
 
-      <AuthModal open={authOpen} onClose={() => setAuthOpen(false)} />
     </>
   );
 }

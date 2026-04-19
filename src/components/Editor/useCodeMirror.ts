@@ -18,12 +18,17 @@ interface UseCodeMirrorOptions {
 export function useCodeMirror({ initialValue, onChange, onSave }: UseCodeMirrorOptions) {
   const containerRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<EditorView | null>(null);
+  const initialValueRef = useRef(initialValue);
   const onChangeRef = useRef(onChange);
   const onSaveRef = useRef(onSave);
 
-  // Keep refs up to date without recreating the editor
-  onChangeRef.current = onChange;
-  onSaveRef.current = onSave;
+  useEffect(() => {
+    onChangeRef.current = onChange;
+  }, [onChange]);
+
+  useEffect(() => {
+    onSaveRef.current = onSave;
+  }, [onSave]);
 
   const setValue = useCallback((value: string) => {
     const view = viewRef.current;
@@ -55,7 +60,7 @@ export function useCodeMirror({ initialValue, onChange, onSave }: UseCodeMirrorO
     });
 
     const state = EditorState.create({
-      doc: initialValue,
+      doc: initialValueRef.current,
       extensions: [
         saveKeymap,
         history(),

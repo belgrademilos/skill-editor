@@ -1,5 +1,4 @@
 import { create } from 'zustand';
-import { unpackSkill, stripCommonPrefix } from '../lib/zip';
 import { parseFrontmatter, serializeFrontmatter } from '../lib/frontmatter';
 import { saveSession, loadSession, type StoredSession } from '../lib/storage';
 import {
@@ -17,9 +16,6 @@ interface SkillState {
   skillName: string;
 
   // Actions
-  loadSkillFile: (file: File) => Promise<void>;
-  loadMdFile: (file: File) => Promise<void>;
-  loadFromGitHub: (url: string) => Promise<void>;
   restoreSession: () => Promise<boolean>;
   updateContent: (content: string) => void;
   setActiveContent: (content: string) => void;
@@ -61,73 +57,6 @@ export const useSkillStore = create<SkillState>((set, get) => ({
   content: INITIAL_SKILL?.content ?? '',
   isDirty: false,
   skillName: INITIAL_SKILL?.name ?? '',
-
-  loadSkillFile: async (file: File) => {
-    const { files: rawFiles } = await unpackSkill(file);
-    const files = stripCommonPrefix(rawFiles);
-
-    const skillMdPath = findSkillMd(files);
-    if (!skillMdPath) throw new Error('No SKILL.md found in archive.');
-
-    const content = files.get(skillMdPath)!;
-    set({
-      content,
-      skillName: extractSkillName(content),
-      isDirty: false,
-    });
-    get().persistSession();
-  },
-
-  loadFromGitHub: async (url: string) => {
-    // Parse GitHub repo URL
-    const match = url.trim().match(
-      /^https?:\/\/github\.com\/([^/]+)\/([^/\s#?]+)/
-    );
-    if (!match) throw new Error('Invalid link');
-
-    const owner = match[1];
-    const repo = match[2].replace(/\.git$/, '');
-
-    // Try fetching SKILL.md from common default branches
-    let content: string | null = null;
-    for (const branch of ['main', 'master']) {
-      const rawUrl = `https://raw.githubusercontent.com/${owner}/${repo}/${branch}/SKILL.md`;
-      try {
-        const res = await fetch(rawUrl);
-        if (res.ok) {
-          content = await res.text();
-          break;
-        }
-      } catch {
-        // Try next branch
-      }
-    }
-
-    if (!content) throw new Error('Invalid link');
-
-    set({
-      content,
-      skillName: extractSkillName(content),
-      isDirty: false,
-    });
-    get().persistSession();
-  },
-
-  loadMdFile: async (file: File) => {
-    const text = await file.text();
-    const parsed = parseFrontmatter(text);
-
-    if (!parsed.frontmatter.name || !parsed.frontmatter.description) {
-      throw new Error('Invalid skill.md file.');
-    }
-
-    set({
-      content: text,
-      skillName: parsed.frontmatter.name,
-      isDirty: false,
-    });
-    get().persistSession();
-  },
 
   restoreSession: async () => {
     const session = await loadSession();

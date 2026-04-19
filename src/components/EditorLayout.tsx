@@ -20,17 +20,15 @@ export function EditorLayout() {
 
   const handleExportSkill = useCallback(async () => {
     const state = useSkillStore.getState();
-    const files = new Map<string, string>();
-    files.set('SKILL.md', state.content);
     const name = state.skillName || 'skill';
-    const blob = await packAsSkill(files, name);
+    const blob = await packAsSkill(state.content, name);
     downloadBlob(blob, `${name}.skill`);
   }, []);
 
   const handleExportMd = useCallback(() => {
     const state = useSkillStore.getState();
     const name = state.skillName || 'SKILL';
-    const blob = exportSingleMd(state.content, `${name}.md`);
+    const blob = exportSingleMd(state.content);
     downloadBlob(blob, `${name}.md`);
   }, []);
 
