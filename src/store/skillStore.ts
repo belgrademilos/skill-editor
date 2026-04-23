@@ -6,6 +6,7 @@ import {
   syncLibraryWithRestoredContent,
   useSkillLibraryStore,
 } from './skillLibraryStore';
+import { useAuthStore } from './authStore';
 
 interface SkillState {
   /** Full document content including YAML frontmatter */
@@ -119,6 +120,8 @@ export const useSkillStore = create<SkillState>((set, get) => ({
   persistSession: () => {
     if (saveTimeout) clearTimeout(saveTimeout);
     saveTimeout = setTimeout(async () => {
+      // Skip local IndexedDB persistence when signed in — Firestore is the source of truth.
+      if (useAuthStore.getState().status === 'signed-in') return;
       const { content, skillName } = get();
       const session: StoredSession = {
         skillName,

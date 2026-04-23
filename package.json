@@ -12,7 +12,6 @@
     "test:watch": "vitest"
   },
   "dependencies": {
-    "@better-auth/infra": "^0.2.4",
     "@codemirror/commands": "^6.10.3",
     "@codemirror/lang-markdown": "^6.5.0",
     "@codemirror/language": "^6.12.3",
@@ -21,11 +20,10 @@
     "@codemirror/view": "^6.41.0",
     "@lezer/highlight": "^1.2.3",
     "@vercel/analytics": "^2.0.1",
-    "drizzle-orm": "^0.45.2",
+    "firebase": "^12.12.1",
     "idb-keyval": "^6.2.2",
     "jszip": "^3.10.1",
     "lucide-react": "^0.577.0",
-    "pg": "^8.20.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "zustand": "^5.0.11"
@@ -36,7 +34,6 @@
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",
     "@types/node": "^24.10.1",
-    "@types/pg": "^8.20.0",
     "@types/react": "^19.2.7",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^5.1.1",

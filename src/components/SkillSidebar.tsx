@@ -1,8 +1,10 @@
 import { useState, useRef, useEffect } from 'react';
-import { Plus, Upload, Github, Loader2, MoreHorizontal, Copy, Trash2, FilePlus } from 'lucide-react';
+import { Plus, Upload, Github, Loader2, MoreHorizontal, Copy, Trash2, FilePlus, LogOut } from 'lucide-react';
 import { serializeFrontmatter } from '../lib/frontmatter';
 import { useSkillLibraryStore } from '../store/skillLibraryStore';
 import { useSkillStore } from '../store/skillStore';
+import { useAuthStore } from '../store/authStore';
+import { isFirebaseConfigured } from '../lib/firebase';
 import { parseSkillFile, parseSkillFromGitHub } from '../lib/parseSkill';
 
 export function SkillSidebar() {
@@ -13,6 +15,10 @@ export function SkillSidebar() {
   const removeSkill = useSkillLibraryStore((s) => s.removeSkill);
   const duplicateSkill = useSkillLibraryStore((s) => s.duplicateSkill);
   const setActiveContent = useSkillStore((s) => s.setActiveContent);
+  const authStatus = useAuthStore((s) => s.status);
+  const authUser = useAuthStore((s) => s.user);
+  const signInWithGoogle = useAuthStore((s) => s.signInWithGoogle);
+  const signOutUser = useAuthStore((s) => s.signOutUser);
 
   const [addOpen, setAddOpen] = useState(false);
   const [githubOpen, setGithubOpen] = useState(false);
@@ -21,9 +27,13 @@ export function SkillSidebar() {
   const [error, setError] = useState<string | null>(null);
   const [rowMenuOpen, setRowMenuOpen] = useState<string | null>(null);
   const [rowMenuPos, setRowMenuPos] = useState<{ top: number; left: number } | null>(null);
+  const [avatarLoadFailed, setAvatarLoadFailed] = useState(false);
   const addMenuRef = useRef<HTMLDivElement>(null);
   const rowMenuRef = useRef<HTMLDivElement>(null);
   const rowMenuButtonRef = useRef<HTMLButtonElement>(null);
+  const authLabel = authUser?.displayName ?? authUser?.email ?? 'Signed in';
+  const avatarInitial = authLabel.trim().charAt(0).toUpperCase() || '?';
+  const avatarUrl = authUser?.photoURL ?? null;
 
   useEffect(() => {
     if (!addOpen) return;
@@ -57,6 +67,10 @@ export function SkillSidebar() {
       window.removeEventListener('scroll', close, true);
     };
   }, [rowMenuOpen]);
+
+  useEffect(() => {
+    setAvatarLoadFailed(false);
+  }, [avatarUrl]);
 
   const showError = (msg: string) => {
     setError(msg);
@@ -240,19 +254,78 @@ export function SkillSidebar() {
         </div>
 
         <div className="shrink-0 border-t border-border p-4">
-          <p className="text-[11px] font-semibold leading-4 text-text-primary">
-            Save your skills
-          </p>
-          <p className="mt-2 text-[11px] leading-4 text-text-secondary">
-            Cloud sync is coming soon.
-          </p>
-          <button
-            type="button"
-            disabled
-            className="mt-3 w-full cursor-not-allowed rounded-full border border-border bg-transparent px-3 py-1.5 text-sm font-medium text-text-muted opacity-60"
-          >
-            Sign in (coming soon)
-          </button>
+          {!isFirebaseConfigured ? (
+            <>
+              <p className="text-[11px] font-semibold leading-4 text-text-primary">
+                Save your skills
+              </p>
+              <p className="mt-2 text-[11px] leading-4 text-text-secondary">
+                Cloud sync is not configured in this build.
+              </p>
+              <button
+                type="button"
+                disabled
+                className="mt-3 w-full cursor-not-allowed rounded-full border border-border bg-transparent px-3 py-1.5 text-sm font-medium text-text-muted opacity-60"
+              >
+                Sign in (unavailable)
+              </button>
+            </>
+          ) : authStatus === 'loading' ? (
+            <>
+              <p className="text-[11px] font-semibold leading-4 text-text-primary">
+                Save your skills
+              </p>
+              <p className="mt-2 text-[11px] leading-4 text-text-secondary">
+                Sync your skills across devices.
+              </p>
+              <div className="mt-3 h-[34px] w-full rounded-full border border-border bg-transparent animate-pulse" />
+            </>
+          ) : authStatus === 'signed-in' && authUser ? (
+            <div className="flex items-center gap-3">
+              {avatarUrl && !avatarLoadFailed ? (
+                <img
+                  src={avatarUrl}
+                  alt=""
+                  referrerPolicy="no-referrer"
+                  onError={() => setAvatarLoadFailed(true)}
+                  className="size-8 shrink-0 rounded-full bg-bg-hover object-cover"
+                />
+              ) : (
+                <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-accent text-xs font-semibold text-white">
+                  {avatarInitial}
+                </div>
+              )}
+              <div className="flex min-w-0 flex-1 flex-col">
+                <span className="truncate text-xs font-medium text-text-primary">
+                  {authLabel}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => void signOutUser()}
+                  className="mt-0.5 inline-flex items-center gap-1 self-start text-[11px] leading-4 text-text-muted hover:text-text-primary transition-colors"
+                >
+                  <LogOut className="size-3" aria-hidden />
+                  Sign out
+                </button>
+              </div>
+            </div>
+          ) : (
+            <>
+              <p className="text-[11px] font-semibold leading-4 text-text-primary">
+                Save your skills
+              </p>
+              <p className="mt-2 text-[11px] leading-4 text-text-secondary">
+                Sync your skills across devices.
+              </p>
+              <button
+                type="button"
+                onClick={() => void signInWithGoogle()}
+                className="mt-3 w-full rounded-full border border-border bg-transparent px-3 py-1.5 text-sm font-medium text-text-primary hover:bg-bg-hover transition-colors"
+              >
+                Sign in with Google
+              </button>
+            </>
+          )}
         </div>
       </div>
 
@@ -292,7 +365,7 @@ export function SkillSidebar() {
               Import from GitHub
             </h2>
             <p className="text-sm text-text-secondary mb-4">
-              Paste a public GitHub repo URL. SKILL.md will be fetched from the default branch.
+              Paste a public repo, SKILL.md file, folder, or raw GitHub URL.
             </p>
             <div className="relative">
               <Github className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted pointer-events-none" />
@@ -304,7 +377,7 @@ export function SkillSidebar() {
                   if (e.key === 'Enter') handleGithubImport();
                   if (e.key === 'Escape') setGithubOpen(false);
                 }}
-                placeholder="https://github.com/owner/repo"
+                placeholder="https://github.com/owner/repo/blob/main/path/SKILL.md"
                 autoFocus
                 className="w-full pl-9 pr-3 py-2.5 rounded-lg text-sm bg-bg-primary border border-border text-text-primary placeholder:text-text-muted focus:outline-none focus:border-accent transition-colors"
               />

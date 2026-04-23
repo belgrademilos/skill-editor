@@ -6,6 +6,13 @@ export interface ParsedSkill {
   content: string;
 }
 
+const DEFAULT_BRANCHES = ['main', 'master'];
+
+interface RawCandidate {
+  url: string;
+  fallbackName: string;
+}
+
 export async function parseSkillFile(file: File): Promise<ParsedSkill> {
   const ext = file.name.split('.').pop()?.toLowerCase();
 
@@ -27,24 +34,78 @@ export async function parseSkillFile(file: File): Promise<ParsedSkill> {
   throw new Error('Unsupported file. Use .skill, .zip, or .md');
 }
 
+function joinRawPath(parts: string[]): string {
+  return parts.map((part) => encodeURIComponent(part)).join('/');
+}
+
+function rawGitHubUrl(owner: string, repo: string, path: string[]): string {
+  return `https://raw.githubusercontent.com/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/${joinRawPath(path)}`;
+}
+
+function addCandidate(candidates: RawCandidate[], seen: Set<string>, url: string, fallbackName: string) {
+  if (seen.has(url)) return;
+  seen.add(url);
+  candidates.push({ url, fallbackName });
+}
+
+function gitHubRawCandidates(input: string): RawCandidate[] {
+  let parsed: URL;
+  try {
+    parsed = new URL(input.trim());
+  } catch {
+    throw new Error('Invalid link');
+  }
+
+  const candidates: RawCandidate[] = [];
+  const seen = new Set<string>();
+
+  if (parsed.hostname === 'raw.githubusercontent.com') {
+    const [, repo = 'untitled'] = parsed.pathname.split('/').filter(Boolean).map(decodeURIComponent);
+    addCandidate(candidates, seen, parsed.toString(), repo.replace(/\.git$/, ''));
+    return candidates;
+  }
+
+  if (parsed.hostname !== 'github.com') {
+    throw new Error('Invalid link');
+  }
+
+  const segments = parsed.pathname.split('/').filter(Boolean).map(decodeURIComponent);
+  const [owner, repoWithGit, viewType, ...rest] = segments;
+
+  if (!owner || !repoWithGit) {
+    throw new Error('Invalid link');
+  }
+
+  const repo = repoWithGit.replace(/\.git$/, '');
+
+  if (viewType === 'blob' || viewType === 'tree') {
+    if (rest.length === 0) {
+      throw new Error('Invalid link');
+    }
+
+    const path = viewType === 'blob' ? rest : [...rest, 'SKILL.md'];
+    addCandidate(candidates, seen, rawGitHubUrl(owner, repo, path), repo);
+    return candidates;
+  }
+
+  for (const branch of DEFAULT_BRANCHES) {
+    addCandidate(candidates, seen, rawGitHubUrl(owner, repo, [branch, 'SKILL.md']), repo);
+  }
+
+  return candidates;
+}
+
 export async function parseSkillFromGitHub(url: string): Promise<ParsedSkill> {
-  const match = url.trim().match(/^https?:\/\/github\.com\/([^/]+)\/([^/\s#?]+)/);
-  if (!match) throw new Error('Invalid link');
-
-  const owner = match[1];
-  const repo = match[2].replace(/\.git$/, '');
-
-  for (const branch of ['main', 'master']) {
-    const rawUrl = `https://raw.githubusercontent.com/${owner}/${repo}/${branch}/SKILL.md`;
+  for (const candidate of gitHubRawCandidates(url)) {
     try {
-      const res = await fetch(rawUrl);
+      const res = await fetch(candidate.url);
       if (res.ok) {
         const content = await res.text();
-        const name = parseFrontmatter(content).frontmatter.name || repo;
+        const name = parseFrontmatter(content).frontmatter.name || candidate.fallbackName;
         return { name, content };
       }
     } catch {
-      // try next branch
+      // Try the next candidate.
     }
   }
 

@@ -7,7 +7,7 @@ A free, browser-based editor for agent skills. Works with skills for any agent p
 ## Features
 
 - Import `.skill` / `.zip` archives or plain `.md` files via drag-and-drop or file picker
-- Import directly from a public GitHub repo by pasting the repo URL
+- Import directly from public GitHub repo, file, folder, or raw URLs
 - Source-mode markdown editing powered by CodeMirror 6 (custom dark theme, muted syntax highlighting)
 - YAML frontmatter highlighting — keys, values, and `---` delimiters styled distinctly
 - Skills sidebar for browsing and switching between multiple skills in a local library

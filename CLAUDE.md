@@ -19,10 +19,11 @@ Skill Editor — a free, browser-based editor for agent skills. Works with skill
 
 - React 19, TypeScript, Vite 7, Tailwind CSS v4 (via `@tailwindcss/vite` plugin)
 - **CodeMirror 6** for source-mode markdown editing (custom theme, frontmatter highlighting)
-- **Zustand** for state management (single store)
+- **Zustand** for state management (multiple stores: editor, library, auth)
+- **Firebase** v10+ modular SDK (Auth + Firestore) for Google sign-in and per-user cloud sync
 - **JSZip** for .skill/.zip pack/unpack
 - **gray-matter** for YAML frontmatter parsing
-- **idb-keyval** for IndexedDB session persistence
+- **idb-keyval** for IndexedDB session persistence (anonymous users only)
 - **lucide-react** for icons
 - **vitest** + **@testing-library/react** for tests (jsdom environment)
 
@@ -44,11 +45,15 @@ One screen: the editor. No intro/landing page, no view routing, no history sync 
 
 ### Key Files
 
-- `src/store/skillStore.ts` — Central Zustand store for the **active** skill. Single `content` string (full document), `skillName` derived from frontmatter, session persistence (debounced 1s to IndexedDB). Exposes `loadSkillFile`, `loadMdFile`, `loadFromGitHub`, `restoreSession`, `updateContent`, `setActiveContent`, `startFromScratch`.
-- `src/store/skillLibraryStore.ts` — Zustand store for the sidebar library: array of `SkillEntry { id, name, content }`, `selectedId`, `sidebarOpen`. Seeded with placeholder skills. Actions: `selectSkill`, `addSkill`, `removeSkill`, `toggleSidebar`, `updateSelectedContent`.
-- `src/SkillEditorApp.tsx` — App entry point. Installs `useBeforeUnload` and restores the persisted session on mount, then renders `EditorLayout`.
+- `src/store/skillStore.ts` — Central Zustand store for the **active** skill. Single `content` string (full document), `skillName` derived from frontmatter, session persistence (debounced 1s to IndexedDB; skipped when signed in). Exposes `loadSkillFile`, `loadMdFile`, `loadFromGitHub`, `restoreSession`, `updateContent`, `setActiveContent`, `startFromScratch`.
+- `src/store/skillLibraryStore.ts` — Zustand store for the sidebar library: `skills: SkillEntry[]`, `selectedId`, plus cloud-mode fields (`mode: 'local' | 'cloud'`, `cloudUid`, `cloudUnsubscribe`, `cloudInitialLoad`). Actions: `selectSkill`, `addSkill`, `removeSkill`, `duplicateSkill`, `updateSelectedContent`, `bindToCloud`, `unbindFromCloud`. Mutators mirror to Firestore when `mode === 'cloud'`; `updateSelectedContent` debounces cloud upserts (~800ms).
+- `src/store/placeholderSkills.ts` — The 4 built-in placeholder skills (`PLACEHOLDER_SKILLS`) and the shared `SkillEntry` type. Extracted from `skillLibraryStore` to avoid a circular dep with `lib/cloudSkills.ts`.
+- `src/store/authStore.ts` — Zustand store for Firebase auth: `user`, `status: 'loading' | 'signed-in' | 'signed-out'`, `signInWithGoogle` (popup with `signInWithRedirect` fallback when popup is blocked), `signOutUser`. `initAuthListener()` wires `onAuthStateChanged` to update the store. If Firebase env vars are missing, status initializes to `'signed-out'` so the app still runs.
+- `src/lib/firebase.ts` — Lazy singleton initializers (`getFirebaseApp`, `getFirebaseAuth`, `getFirebaseDb`), `GoogleAuthProvider` instance, and `isFirebaseConfigured` boolean derived from `VITE_FIREBASE_*` env vars.
+- `src/lib/cloudSkills.ts` — Firestore wrappers: `subscribeToUserSkills`, `upsertSkill`, `deleteSkillFromCloud`, `isUserLibraryEmpty`, `seedUserLibrary`. Layout: `users/{uid}/skills/{skillId}`.
+- `src/SkillEditorApp.tsx` — App entry point. Calls `initAuthListener()` on mount and subscribes to `authStore` to drive library transitions: on sign-in → `bindToCloud(uid)` + clear IndexedDB; on sign-out → `unbindFromCloud()` + reset to placeholder library; on initial `signed-out` → `restoreSession()` from IndexedDB.
 - `src/components/EditorLayout.tsx` — Main layout: horizontal flex with `SkillSidebar` + (toolbar + CodeMirror editor), with `SiteFooter` at the bottom.
-- `src/components/SkillSidebar.tsx` — Left-hand skills panel. Header with "Skills" label and "+" add menu (Upload / Import GitHub URL), scrollable list of skill entries. Clicking an entry selects it and loads its content into `skillStore` via `setActiveContent`. Footer holds a disabled "Sign in (coming soon)" placeholder — no auth provider is currently wired up.
+- `src/components/SkillSidebar.tsx` — Left-hand skills panel. Header with "Skills" label and "+" add menu (Upload / Import GitHub URL), scrollable list of skill entries. Clicking an entry selects it and loads its content into `skillStore` via `setActiveContent`. Footer is auth-state-driven: loading skeleton, "Sign in with Google" CTA, or avatar + display name + "Sign out"; falls back to a disabled "Sign in (unavailable)" state when Firebase isn't configured.
 - `src/components/EditorToolbar.tsx` — Minimal toolbar: skill name display, dirty indicator, export dropdown (.skill / .md).
 - `src/components/SiteFooter.tsx` — Footer with two cells: left (sidebar-width) holds a GitHub repo link + "WTF is Skill Editor?" button that opens `AboutModal`; right cell shows the live token count from `skillDocumentStats`.
 - `src/components/AboutModal.tsx` — Modal triggered from the footer.
@@ -68,24 +73,32 @@ One screen: the editor. No intro/landing page, no view routing, no history sync 
 
 - **Full-document editing**: The store holds the complete SKILL.md content (frontmatter + body). No separation — what the user sees is what gets exported.
 - **Reactive skill name**: `skillName` is extracted from frontmatter on every content update via `parseFrontmatter()`. No separate name/description fields to keep in sync.
-- **Two-store split**: `skillStore` holds the active document being edited; `skillLibraryStore` holds the sidebar list. Editor changes propagate to the library via `updateSelectedContent`, and sidebar selection writes back into the editor via `setActiveContent`.
-- **Session auto-save**: Every mutation calls `persistSession()` which debounces to IndexedDB. On reload, `restoreSession()` recovers the full editing state. Backwards-compatible with old multi-file session format.
+- **Three-store split**: `skillStore` holds the active document being edited; `skillLibraryStore` holds the sidebar list (local or cloud-backed); `authStore` holds the Firebase user + status. Editor changes propagate to the library via `updateSelectedContent`, and sidebar selection writes back into the editor via `setActiveContent`.
+- **Library dual-mode**: `skillLibraryStore` operates in `'local'` mode (seeded with `PLACEHOLDER_SKILLS`, persisted to IndexedDB via `skillStore.persistSession`) or `'cloud'` mode (backed by `users/{uid}/skills` in Firestore, real-time sync via `onSnapshot`). `SkillEditorApp` drives the transition by subscribing to `authStore` — on sign-in it calls `bindToCloud(uid)`, which seeds the 4 placeholders if the user's subcollection is empty, then subscribes for live updates; on sign-out it calls `unbindFromCloud()` which resets to the placeholder library. Mutators (`addSkill`, `removeSkill`, `duplicateSkill`, `updateSelectedContent`) route writes to Firestore when in cloud mode; keystroke edits are debounced ~800ms. To avoid clobbering mid-edit content, snapshot reconciliation merges any pending upsert back into incoming cloud state.
+- **Session auto-save**: When signed out, every mutation calls `persistSession()` which debounces to IndexedDB. On reload, `restoreSession()` recovers the full editing state. Backwards-compatible with old multi-file session format. When signed in, `persistSession` is a no-op — Firestore is the source of truth, and `SkillEditorApp` calls `clearSession()` on the sign-in transition.
 - **GitHub import (V1)**: `loadFromGitHub()` accepts a public GitHub repo URL, parses `owner/repo`, and tries `raw.githubusercontent.com/.../main/SKILL.md` then `.../master/SKILL.md`. No auth, no branch selection, no subdirectory support yet. Errors surface as "Invalid link" in the sidebar GitHub import modal.
 - **Spellcheck disabled**: The editor sets `spellcheck: false` — no red squiggly underlines.
 - **Vite config**: Polyfills `process.env`, `global`, and `Buffer` for gray-matter (Node library) to work in browser.
-- **No auth**: The app runs entirely client-side with IndexedDB persistence. The sidebar "Sign in" button is a disabled placeholder reserved for a future provider.
+- **Firebase config gating**: `isFirebaseConfigured` in `lib/firebase.ts` checks for `VITE_FIREBASE_API_KEY`, `VITE_FIREBASE_PROJECT_ID`, `VITE_FIREBASE_APP_ID`. When any are missing the sidebar footer shows a disabled "Sign in (unavailable)" state and the app runs in permanent local mode. This keeps the OSS fork-and-run experience working without Firebase credentials.
+- **StrictMode + auth listener**: `initAuthListener()` MUST register a fresh `onAuthStateChanged` listener every call — React 19 StrictMode double-invokes effects, and any "already initialized" guard would leave the second invocation with a no-op after the first's cleanup ran, stalling `status` at `'loading'` forever. The cleanup returned from the effect unsubscribes per-registration; multiple listeners briefly overlapping is fine since they mutate the same store.
 
 ## Deployment
 
 - Hosted on Vercel at `skilleditor.com`. `vercel.json` has a catch-all SPA rewrite to `index.html`.
 - `@vercel/analytics/react` is included in `App.tsx` but auto-disables outside Vercel — no env vars needed to run locally.
-- No external services or env vars required — the app is fully client-side.
-- No private secrets in the codebase. Use `import.meta.env.VITE_*` for any future envs.
+- Firebase is optional for running locally. When `VITE_FIREBASE_*` vars are absent the app runs fully client-side with IndexedDB persistence. With them wired up, sign-in unlocks Firestore-backed cloud sync.
+- Env vars live in `.env.local` (git-ignored) for local dev and in Vercel Project Settings → Environment Variables for prod/preview. `.env.example` documents the required keys. Firebase web config values are public by design — security is enforced via Firestore rules + authorized domains.
+- Required in Firebase Console: Auth provider **Google** enabled; **Authorized domains** must include `localhost`, the Vercel preview pattern, and `skilleditor.com`. Firestore rules should scope access to `users/{uid}`:
+  ```
+  match /users/{uid}/skills/{skillId} {
+    allow read, write: if request.auth != null && request.auth.uid == uid;
+  }
+  ```
 
 ## Open Source
 
-- MIT licensed, single-repo approach. Deployment-specific code (analytics) gracefully no-ops for local/non-Vercel contributors.
-- Contributors can clone and run `npm install && npm run dev` without any Vercel setup.
+- MIT licensed, single-repo approach. Deployment-specific code (analytics, Firebase) gracefully no-ops for local/non-Vercel contributors.
+- Contributors can clone and run `npm install && npm run dev` without any Vercel or Firebase setup. The sidebar will show a disabled sign-in placeholder; the editor works fully against IndexedDB.
 
 ## Roadmap
 
