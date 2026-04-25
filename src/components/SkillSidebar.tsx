@@ -6,6 +6,7 @@ import { useSkillStore } from '../store/skillStore';
 import { useAuthStore } from '../store/authStore';
 import { isFirebaseConfigured } from '../lib/firebase';
 import { parseSkillFile, parseSkillFromGitHub } from '../lib/parseSkill';
+import googleIcon from '../../brand/google/GOOGLE.svg';
 
 export function SkillSidebar() {
   const skills = useSkillLibraryStore((s) => s.skills);
@@ -320,8 +321,9 @@ export function SkillSidebar() {
               <button
                 type="button"
                 onClick={() => void signInWithGoogle()}
-                className="mt-3 w-full rounded-full border border-border bg-transparent px-3 py-1.5 text-sm font-medium text-text-primary hover:bg-bg-hover transition-colors"
+                className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-full border border-border bg-transparent px-3 py-1.5 text-sm font-medium text-text-primary hover:bg-bg-hover transition-colors"
               >
+                <img src={googleIcon} alt="" className="size-4 shrink-0" aria-hidden />
                 Sign in with Google
               </button>
             </>

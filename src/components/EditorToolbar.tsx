@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
-import { Download, ChevronDown, Pencil, Eye } from 'lucide-react';
+import { Download, ChevronDown, Pencil, Eye, FileText } from 'lucide-react';
+import claudeIcon from '../../brand/agents/claude-ico.svg';
 
 export type ViewMode = 'edit' | 'preview';
 
@@ -59,8 +60,9 @@ export function EditorToolbar({
                   onExportSkill();
                   setExportOpen(false);
                 }}
-                className="w-full text-left px-3 py-2 text-sm text-text-primary hover:bg-bg-hover transition-colors"
+                className="w-full text-left px-3 py-2 text-sm text-text-primary hover:bg-bg-hover transition-colors flex items-center gap-2"
               >
+                <img src={claudeIcon} alt="" className="w-3.5 h-3.5" aria-hidden />
                 Export as .skill
               </button>
               <button
@@ -69,8 +71,9 @@ export function EditorToolbar({
                   onExportMd();
                   setExportOpen(false);
                 }}
-                className="w-full text-left px-3 py-2 text-sm text-text-primary hover:bg-bg-hover transition-colors"
+                className="w-full text-left px-3 py-2 text-sm text-text-primary hover:bg-bg-hover transition-colors flex items-center gap-2"
               >
+                <FileText className="w-3.5 h-3.5 text-text-muted" />
                 Export as .md
               </button>
             </div>
