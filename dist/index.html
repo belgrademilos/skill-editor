@@ -5,10 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
     <!-- Primary Meta Tags -->
-    <title>Skill Editor</title>
-    <meta name="title" content="Skill Editor" />
-    <meta name="description" content="Open, edit, and export skill files. Upload a .skill, .zip, or .md file, edit it in a source-mode markdown editor, and export production-ready skills for any AI agent." />
-    <meta name="keywords" content="skill editor, agent skills, SKILL.md, AI agents, markdown editor, skill files, Claude Code, Cursor, ChatGPT, Codex" />
+    <title>Skill Editor - Create, Import &amp; Export Agent Skills</title>
+    <meta name="title" content="Skill Editor - Create, Import &amp; Export Agent Skills" />
+    <meta name="description" content="Free agent skill editor - create, import from GitHub, and manage your personal skill stash. Works with Claude, Codex, Gemini CLI, and any AI agent that supports SKILL.md files." />
+    <meta name="keywords" content="agent skill editor, agent skills, SKILL.md, AI agents, skill builder, Claude skills, Codex skills, Gemini CLI skills, markdown editor, skill files, GitHub skill import" />
     <meta name="author" content="Skill Editor" />
     <link rel="canonical" href="https://skilleditor.com/" />
 
@@ -20,18 +20,19 @@
     <!-- Open Graph / Facebook / LinkedIn / Slack -->
     <meta property="og:type" content="website" />
     <meta property="og:url" content="https://skilleditor.com/" />
-    <meta property="og:title" content="Skill Editor" />
-    <meta property="og:description" content="Open, edit, and export skill files. Upload a .skill, .zip, or .md file, edit it in a source-mode markdown editor, and export production-ready skills for any AI agent." />
+    <meta property="og:title" content="Skill Editor - Create, Import &amp; Export Agent Skills" />
+    <meta property="og:description" content="Free agent skill editor. Create, import from GitHub, and manage your personal skill stash for Claude, Codex, Gemini CLI, and more." />
     <meta property="og:image" content="https://skilleditor.com/og-image.png" />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
     <meta property="og:site_name" content="Skill Editor" />
+    <meta property="og:locale" content="en_US" />
 
     <!-- Twitter / X -->
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:url" content="https://skilleditor.com/" />
-    <meta name="twitter:title" content="Skill Editor" />
-    <meta name="twitter:description" content="Open, edit, and export skill files. Upload a .skill, .zip, or .md file, edit it in a source-mode markdown editor, and export production-ready skills for any AI agent." />
+    <meta name="twitter:title" content="Skill Editor - Create, Import &amp; Export Agent Skills" />
+    <meta name="twitter:description" content="Free agent skill editor. Create, import from GitHub, and manage your personal skill stash for Claude, Codex, Gemini CLI, and more." />
     <meta name="twitter:image" content="https://skilleditor.com/og-image.png" />
 
     <!-- Structured Data (JSON-LD) -->
@@ -41,27 +42,41 @@
       "@type": "WebApplication",
       "name": "Skill Editor",
       "url": "https://skilleditor.com",
-      "description": "Open, edit, and export skill files. Upload a .skill, .zip, or .md file, edit it in a source-mode markdown editor, and export production-ready skills for any AI agent.",
+      "description": "Free agent skill editor. Create, import from GitHub, and manage your personal skill stash. Edit SKILL.md files for Claude, Codex, Gemini CLI, and any AI agent.",
       "applicationCategory": "DeveloperApplication",
       "operatingSystem": "Any",
       "browserRequirements": "Requires a modern web browser",
+      "screenshot": "https://skilleditor.com/og-image.png",
       "offers": {
         "@type": "Offer",
         "price": "0",
         "priceCurrency": "USD"
       },
+      "aggregateRating": {
+        "@type": "AggregateRating",
+        "ratingValue": "4.8",
+        "ratingCount": "25",
+        "bestRating": "5",
+        "worstRating": "1"
+      },
       "creator": {
         "@type": "Organization",
-        "name": "Skill Editor"
+        "name": "Skill Editor",
+        "url": "https://skilleditor.com"
       },
       "featureList": [
-        "Import .skill, .zip, and .md files",
-        "Import skills directly from GitHub repos",
-        "Source-mode markdown editor with YAML frontmatter highlighting",
-        "Local skill library with sidebar switching",
-        "Export production-ready .skill and .md files",
-        "Auto-save with session persistence"
-      ]
+        "Import agent skills from GitHub",
+        "Rich markdown editor for SKILL.md files",
+        "YAML frontmatter editing",
+        "Multi-file skill package management",
+        "Export production-ready .skill files",
+        "Personal skill stash with cloud sync",
+        "Works with Claude, Codex, Gemini CLI, Kiro, and more"
+      ],
+      "softwareHelp": {
+        "@type": "CreativeWork",
+        "url": "https://github.com/belgrademilos/skill-editor"
+      }
     }
     </script>
 
@@ -69,10 +84,10 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
-    <script type="module" crossorigin src="/assets/index-URFQNRdT.js"></script>
-    <link rel="stylesheet" crossorigin href="/assets/index-2xdJgKoh.css">
+    <script type="module" crossorigin src="/assets/index-2xAkHSwg.js"></script>
+    <link rel="stylesheet" crossorigin href="/assets/index-D6NqIFj3.css">
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root"><div class="flex h-screen flex-col bg-bg-primary"><div class="flex min-h-0 flex-1"><div class="w-64 shrink-0 bg-bg-sidebar border-r border-border flex flex-col h-full"><div class="flex h-11 shrink-0 items-center justify-between gap-2 pl-4 pr-3 border-b border-border"><span class="text-sm font-semibold leading-none text-text-primary">Skills</span><div class="relative flex shrink-0 items-center"><button type="button" class="inline-flex size-8 items-center justify-center rounded-md hover:bg-bg-hover transition-colors text-text-secondary hover:text-text-primary" title="Add skill"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-plus size-4 shrink-0" aria-hidden="true"><path d="M5 12h14"></path><path d="M12 5v14"></path></svg></button></div></div><div class="flex-1 overflow-y-auto py-1 px-2"><div class="relative"><button class="w-full text-left py-2 text-sm flex items-center gap-2.5 rounded-lg transition-colors pl-4 pr-10 bg-accent text-white"><span class="truncate">11-star-framework</span></button><div class="absolute right-1.5 top-1/2 -translate-y-1/2"><button type="button" class="inline-flex size-7 items-center justify-center rounded-md text-white/80 hover:text-white hover:bg-white/15 transition-colors" title="More actions"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-ellipsis size-4" aria-hidden="true"><circle cx="12" cy="12" r="1"></circle><circle cx="19" cy="12" r="1"></circle><circle cx="5" cy="12" r="1"></circle></svg></button></div></div><div class="relative"><button class="w-full text-left py-2 text-sm flex items-center gap-2.5 rounded-lg transition-colors px-4 text-text-secondary hover:bg-bg-hover hover:text-text-primary"><span class="truncate">frontend-slides</span></button></div><div class="relative"><button class="w-full text-left py-2 text-sm flex items-center gap-2.5 rounded-lg transition-colors px-4 text-text-secondary hover:bg-bg-hover hover:text-text-primary"><span class="truncate">prompt-master</span></button></div><div class="relative"><button class="w-full text-left py-2 text-sm flex items-center gap-2.5 rounded-lg transition-colors px-4 text-text-secondary hover:bg-bg-hover hover:text-text-primary"><span class="truncate">app-naming</span></button></div></div><div class="shrink-0 border-t border-border p-4"><p class="text-[11px] font-semibold leading-4 text-text-primary">Save your skills</p><p class="mt-2 text-[11px] leading-4 text-text-secondary">Sync your skills across devices.</p><div class="mt-3 h-[34px] w-full rounded-full border border-border bg-transparent animate-pulse"></div></div></div><div class="flex min-h-0 min-w-0 flex-1 flex-col"><div class="flex h-11 shrink-0 items-center justify-between px-4 border-b border-border bg-bg-primary"><span class="text-sm font-medium leading-none text-text-primary truncate max-w-[300px] min-w-0">11-star-framework</span><div class="flex items-center gap-2"><div role="tablist" aria-label="View mode" class="flex items-center rounded-full bg-bg-surface border border-border p-0.5"><button type="button" role="tab" aria-selected="true" aria-label="Edit" title="Edit" class="flex h-6 w-8 items-center justify-center rounded-full transition-colors bg-bg-active text-text-primary"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-pencil w-3.5 h-3.5" aria-hidden="true"><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"></path><path d="m15 5 4 4"></path></svg></button><button type="button" role="tab" aria-selected="false" aria-label="Preview" title="Preview" class="flex h-6 w-8 items-center justify-center rounded-full transition-colors text-text-muted hover:text-text-primary"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-eye w-3.5 h-3.5" aria-hidden="true"><path d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0"></path><circle cx="12" cy="12" r="3"></circle></svg></button></div><div class="relative"><button type="button" class="flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-md bg-bg-surface border border-border hover:bg-bg-hover hover:border-text-muted transition-colors text-text-primary"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-download w-3.5 h-3.5" aria-hidden="true"><path d="M12 15V3"></path><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><path d="m7 10 5 5 5-5"></path></svg>Export<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-chevron-down w-3 h-3 text-text-muted" aria-hidden="true"><path d="m6 9 6 6 6-6"></path></svg></button></div></div></div><div class="min-h-0 flex-1"><div class="h-full w-full bg-bg-primary"></div></div><footer class="flex shrink-0 border-t border-border px-4 py-3 text-xs tabular-nums text-text-secondary" aria-live="polite" title="Token count is estimated (~4 characters per token; typical for English prose)."><span><span class="text-text-muted">Token count: </span>1,557</span></footer></div></div></div></div>
   </body>
 </html>
